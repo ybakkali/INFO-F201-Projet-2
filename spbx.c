@@ -71,24 +71,27 @@ int main()
     }
 
     printf("Serveur:  connection recue du client %s\n",inet_ntoa(client_addr.sin_addr));
-    //test
 
-    numbytes = recv(client_sockfd, buf, MAXDATASIZE-1, 0) ;
-    if ( numbytes == -1) {
-        perror("Server: recv");
-        return EXIT_FAILURE;
-    }
-
-    buf[numbytes] = '\0';
-
-    printf("Message recu du client: %s \n",buf);
-
-    //test
     if (fork()==0) {
       /* this is the child process */
       close(server_sockfd);
 
-      if (send(client_sockfd, "Bonjour client!\n",16,0)==-1) {
+      //test
+
+      numbytes = recv(client_sockfd, buf, MAXDATASIZE-1, 0) ;
+      if ( numbytes == -1) {
+          perror("Server: recv");
+          return EXIT_FAILURE;
+      }
+
+      buf[numbytes] = '\0';
+
+      printf("Message recu du client: %s \n",buf);
+
+      //test
+
+      char message[] = {"Bien reçu\n"} ;
+      if (send(client_sockfd, message ,strlen(message),0)==-1) {
       	perror("Serveur: send");
       	return EXIT_FAILURE;
       }

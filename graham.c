@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
       buf[numbytes] = '\0';
 
-      printf("Message recu du serveur: %s",buf);
+      printf("Serveur envoie : %s",buf);
 
       close(sockfd);
 
