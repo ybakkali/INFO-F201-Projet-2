@@ -15,23 +15,11 @@
 
 #define MAXDATASIZE 1024
 // Nombre maximum de bytes reçues
-int findPos( char *array) {
-  unsigned long i = strlen(array)-1 ;
-  int start = 1 ;
-  while (start) {
-    if (array[i]=='/') {
-      start = 0 ;
-    }
-    else {
-    --i ;
-    }
-  }
-  return i+1 ;
-}
+
 int main(int argc, char *argv[])
 {
     if (argc != 7) {
-        fprintf(stderr,"usage: synopsis erroné\n");
+        fprintf(stderr,"Error : synopsis\n");
         return EXIT_FAILURE;
     }
 
@@ -49,19 +37,10 @@ int main(int argc, char *argv[])
     //fgets(buff, 255, (FILE*)fptr);
     fclose(fptr) ;
     //test
-    int i = findPos(argv[3]) ;
-    char *o = strrchr(argv[3],'/') ;
-    printf("i %d o %s \n",i,o) ;
-    char *filename = (char*) malloc( (strlen(argv[3])-i) * sizeof(char));
-    if( filename==NULL) {
-      printf ("Pas assez de memoire\n") ;
-    }
-    int z = 0 ;
-    for(i ; i < strlen(argv[3]) ; ++i) {
-        filename[z] = argv[3][i] ;
-        ++z ;
-    }
-    printf("%s \n",filename) ;
+
+    char *filename = strrchr(argv[3],'/');
+    filename = filename+1 ;
+    printf("%s \n",(filename)) ;
     //test
     int sockfd, numbytes;
     char buf[MAXDATASIZE];

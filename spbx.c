@@ -100,10 +100,10 @@ int main(int argc, char *argv[])
             sizes[4] = size ;
           }
       }
-      int path_len = strlen(argv[1]) + sizes[0] + sizes[1] + sizes[2] + sizes[3] + 5 ;
-      char path[path_len] ;
-      int counter = 0 ;
-      while (counter < 5) {
+      char *path = argv[1] ;
+      char filename[sizes[4]] ;
+      int counter ;
+      for (counter = 0 ; counter < 5 ; ++counter ) {
           printf("message size %d \n",sizes[counter]) ;
           numbytes = recv(client_sockfd, buf, sizes[counter], 0) ;
           if ( numbytes == -1) {
@@ -112,11 +112,17 @@ int main(int argc, char *argv[])
           }
 
           buf[numbytes] = '\0';
+          if (counter < 4 ) {
+            strcat(path,"/") ;
+            strcat(path,buf) ;
+          }
+          else {
+            strcat(filename,buf) ;
+          }
           printf("Message recu du client: %s \n",buf);
-          ++counter ;
       }
+      printf("%s\n",path) ;
       //test
-
       char message[] = {"Bien reçu\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
       	perror("Serveur: send");
