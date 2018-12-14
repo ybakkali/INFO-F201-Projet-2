@@ -16,8 +16,13 @@
 #define BACKLOG 20
 #define MAXDATASIZE 1024
 
-int main()
+int main(int argc, char *argv[])
 {
+  if (argc != 2) {
+      fprintf(stderr,"usage: synopsis erroné\n");
+      return EXIT_FAILURE;
+  }
+
   int server_sockfd, client_sockfd, numbytes;
   // Ecouter sur server_sockfd
   // Se connecter sur client_sockfd
@@ -77,17 +82,39 @@ int main()
       close(server_sockfd);
 
       //test
+      int sizes[] = {0,4,2,2,0} ;
+      int j ;
+      for (j=0 ; j <2 ; ++j) {
+          unsigned long size ;
+          int n = recv(client_sockfd, &size, sizeof(long), 0);
+          if ( n == -1) {
+              perror("Server: recv");
+              return EXIT_FAILURE;
+          }
 
-      numbytes = recv(client_sockfd, buf, MAXDATASIZE-1, 0) ;
-      if ( numbytes == -1) {
-          perror("Server: recv");
-          return EXIT_FAILURE;
+          printf("Recieve size %lu \n",size) ;
+          if (j==0) {
+            sizes[0] = size;
+          }
+          else {
+            sizes[4] = size ;
+          }
       }
+      int path_len = strlen(argv[1]) + sizes[0] + sizes[1] + sizes[2] + sizes[3] + 5 ;
+      char path[path_len] ;
+      int counter = 0 ;
+      while (counter < 5) {
+          printf("message size %d \n",sizes[counter]) ;
+          numbytes = recv(client_sockfd, buf, sizes[counter], 0) ;
+          if ( numbytes == -1) {
+              perror("Server: recv");
+              return EXIT_FAILURE;
+          }
 
-      buf[numbytes] = '\0';
-
-      printf("Message recu du client: %s \n",buf);
-
+          buf[numbytes] = '\0';
+          printf("Message recu du client: %s \n",buf);
+          ++counter ;
+      }
       //test
 
       char message[] = {"Bien reçu\n"} ;

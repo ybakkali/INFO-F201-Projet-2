@@ -15,18 +15,58 @@
 
 #define MAXDATASIZE 1024
 // Nombre maximum de bytes reçues
-
+int findPos( char *array) {
+  unsigned long i = strlen(array)-1 ;
+  int start = 1 ;
+  while (start) {
+    if (array[i]=='/') {
+      start = 0 ;
+    }
+    else {
+    --i ;
+    }
+  }
+  return i+1 ;
+}
 int main(int argc, char *argv[])
 {
-    int sockfd, numbytes;
-    char buf[MAXDATASIZE];
-    struct hostent *he;
-    struct sockaddr_in their_addr; // connector's address information
-
     if (argc != 7) {
         fprintf(stderr,"usage: synopsis erroné\n");
         return EXIT_FAILURE;
     }
+
+    FILE *fptr;
+    char buff[255];
+
+    fptr = fopen(argv[3], "r");
+    if(fptr == NULL)
+    {
+       perror("Error : No such file or directory");
+       return EXIT_FAILURE;
+    }
+    //fscanf(fptr, "%s", buff);
+    //printf("1 : %s\n", buff );
+    //fgets(buff, 255, (FILE*)fptr);
+    fclose(fptr) ;
+    //test
+    int i = findPos(argv[3]) ;
+    char *o = strrchr(argv[3],'/') ;
+    printf("i %d o %s \n",i,o) ;
+    char *filename = (char*) malloc( (strlen(argv[3])-i) * sizeof(char));
+    if( filename==NULL) {
+      printf ("Pas assez de memoire\n") ;
+    }
+    int z = 0 ;
+    for(i ; i < strlen(argv[3]) ; ++i) {
+        filename[z] = argv[3][i] ;
+        ++z ;
+    }
+    printf("%s \n",filename) ;
+    //test
+    int sockfd, numbytes;
+    char buf[MAXDATASIZE];
+    struct hostent *he;
+    struct sockaddr_in their_addr; // connector's address information
 
     he=gethostbyname(argv[1]) ;
     if ( he == NULL) {  // get the host info
@@ -50,31 +90,58 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int counter = 2 ;
-    while (counter < argc ) {
-      if (send(sockfd, argv[counter],strlen(argv[counter]),0)==-1) {
+
+    //test
+    int m = 0 ;
+    unsigned long size ;
+    for (m=0 ;m<2; ++m) {
+      if (m==0) {
+        size = strlen(argv[2]) ;
+      }
+      else {
+        size = strlen(filename) ;
+      }
+
+      if (send(sockfd, &size ,sizeof(long),0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
+      }
+      printf("Send size\n") ;
+      }
+    //test
+    int counter = 2 ;
+    while (counter < argc + 1 ) {
+      if (counter != argc) {
+        if (send(sockfd, argv[counter],strlen(argv[counter]),0)==-1) {
+          perror("Client: send error");
+          return EXIT_FAILURE;
+        }
+      }
+      else {
+        if (send(sockfd, filename,strlen(filename),0)==-1) {
+          perror("Client: send error");
+          return EXIT_FAILURE;
+        }
       }
       if (counter == 2) {
         counter = 4 ;
       }
       else {
-        counter++;
+        ++counter;
       }
-      }
+    }
 
-      numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0) ;
-      if ( numbytes == -1) {
-          perror("Client: recv");
-          return EXIT_FAILURE;
-      }
+    numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0) ;
+    if ( numbytes == -1) {
+        perror("Client: recv");
+        return EXIT_FAILURE;
+    }
 
-      buf[numbytes] = '\0';
+    buf[numbytes] = '\0';
 
-      printf("Serveur envoie : %s",buf);
+    printf("Serveur envoie : %s",buf);
 
-      close(sockfd);
+    close(sockfd);
 
-      return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
