@@ -24,24 +24,23 @@ int main(int argc, char *argv[])
     }
 
     FILE *fptr;
-    char buff[255];
+    char buff[MAXDATASIZE];
 
     fptr = fopen(argv[3], "r");
     if(fptr == NULL)
     {
-       perror("Error : No such file or directory");
+       perror("Error : No such file");
        return EXIT_FAILURE;
     }
     //fscanf(fptr, "%s", buff);
     //printf("1 : %s\n", buff );
     //fgets(buff, 255, (FILE*)fptr);
     fclose(fptr) ;
-    //test
 
     char *filename = strrchr(argv[3],'/');
     filename = filename+1 ;
     printf("%s \n",(filename)) ;
-    //test
+
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
     struct hostent *he;
@@ -69,8 +68,6 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-
-    //test
     int m = 0 ;
     unsigned long size ;
     for (m=0 ;m<2; ++m) {
@@ -87,7 +84,7 @@ int main(int argc, char *argv[])
       }
       printf("Send size\n") ;
       }
-    //test
+
     int counter = 2 ;
     while (counter < argc + 1 ) {
       if (counter != argc) {

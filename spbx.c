@@ -11,10 +11,26 @@
 #include <arpa/inet.h>
 //#include <sys/wait.h>
 //#include <signal.h>
+#include <sys/stat.h>
 
 #define MYPORT 5555
 #define BACKLOG 20
 #define MAXDATASIZE 1024
+
+void createDir(char **dir,int index) {
+  if (index < 4 ) {
+      struct stat st = {0};
+      int x = 0 ;
+      if (stat(dir[index], &st) == -1) {
+          x = mkdir(dir[index], 0750);
+      }
+      if (x == -1) {
+        perror("Error : mkdir");
+      }
+      createDir(dir,index+1) ;
+  }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -81,10 +97,9 @@ int main(int argc, char *argv[])
       /* this is the child process */
       close(server_sockfd);
 
-      //test
       int sizes[] = {0,4,2,2,0} ;
-      int j ;
-      for (j=0 ; j <2 ; ++j) {
+      int i ;
+      for (i = 0 ; i < 2 ; ++i) {
           unsigned long size ;
           int n = recv(client_sockfd, &size, sizeof(long), 0);
           if ( n == -1) {
@@ -93,7 +108,7 @@ int main(int argc, char *argv[])
           }
 
           printf("Recieve size %lu \n",size) ;
-          if (j==0) {
+          if (i==0) {
             sizes[0] = size;
           }
           else {
@@ -101,6 +116,10 @@ int main(int argc, char *argv[])
           }
       }
       char *path = argv[1] ;
+      char *dirUser = malloc(100 * sizeof(char)) ;
+      char *dirUserYear = malloc(100 * sizeof(char)) ;
+      char *dirUserYearMonth = malloc(100 * sizeof(char)) ;
+      char *dirUserYearMonthDay = malloc(100 * sizeof(char)) ;
       char filename[sizes[4]] ;
       int counter ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
@@ -116,13 +135,32 @@ int main(int argc, char *argv[])
             strcat(path,"/") ;
             strcat(path,buf) ;
           }
-          else {
-            strcat(filename,buf) ;
+          switch (counter) {
+            case 0 :
+              strcpy(dirUser,path) ;
+              break ;
+            case 1 :
+              strcpy(dirUserYear,path) ;
+              break ;
+            case 2 :
+              strcpy(dirUserYearMonth,path) ;
+              break ;
+            case 3 :
+              strcpy(dirUserYearMonthDay,path) ;
+              break ;
+            case 4 :
+              strcpy(filename,buf) ;
+              break ;
+            default :
+              printf("OK\n");
           }
           printf("Message recu du client: %s \n",buf);
       }
-      printf("%s\n",path) ;
-      //test
+      printf ("%s\n%s\n%s\n%s\n",dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay) ;
+      char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
+      createDir(dir,0) ;
+      printf("%s\n",filename) ;
+
       char message[] = {"Bien reçu\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
       	perror("Serveur: send");
