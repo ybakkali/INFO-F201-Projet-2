@@ -32,6 +32,9 @@ int main(int argc, char *argv[])
        perror("Error : No such file");
        return EXIT_FAILURE;
     }
+    while (fgets(buff, MAXDATASIZE,(FILE *)fptr) != NULL) {
+      printf("%s",buff) ;
+    }
     //fscanf(fptr, "%s", buff);
     //printf("1 : %s\n", buff );
     //fgets(buff, 255, (FILE*)fptr);
@@ -85,25 +88,21 @@ int main(int argc, char *argv[])
       printf("Send size\n") ;
       }
 
-    int counter = 2 ;
-    while (counter < argc + 1 ) {
-      if (counter != argc) {
-        if (send(sockfd, argv[counter],strlen(argv[counter]),0)==-1) {
-          perror("Client: send error");
-          return EXIT_FAILURE;
-        }
-      }
-      else {
-        if (send(sockfd, filename,strlen(filename),0)==-1) {
-          perror("Client: send error");
-          return EXIT_FAILURE;
-        }
-      }
-      if (counter == 2) {
-        counter = 4 ;
-      }
-      else {
-        ++counter;
+    int counter ;
+    int index[4] = {2,4,5,6} ;
+    for (counter = 0 ; counter < 5 ; ++counter ) {
+      switch (counter) {
+        case 4 :
+            if (send(sockfd,filename,strlen(filename),0)==-1) {
+              perror("Client: send error");
+              return EXIT_FAILURE;
+            }
+            break ;
+        default :
+          if (send(sockfd,argv[index[counter]],strlen(argv[index[counter]]),0)==-1) {
+            perror("Client: send error");
+            return EXIT_FAILURE;
+          }
       }
     }
 
