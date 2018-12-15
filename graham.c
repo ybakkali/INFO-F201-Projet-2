@@ -23,22 +23,24 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    FILE *fptr;
+    FILE *fptr , *fptr2;
     char buff[MAXDATASIZE];
 
     fptr = fopen(argv[3], "r");
-    if(fptr == NULL)
+    fptr2 = fopen("/Users/bakkali/github/C-project/copy.pdf","w") ;
+    if( (fptr == NULL) || (fptr2 == NULL) )
     {
        perror("Error : No such file");
        return EXIT_FAILURE;
     }
-    while (fgets(buff, MAXDATASIZE,(FILE *)fptr) != NULL) {
-      printf("%s",buff) ;
+    int nb = 1;
+    while ((nb = fread(buff,sizeof(char),MAXDATASIZE,fptr))) {
+      printf("%d\n",nb) ;
+      fwrite (buff,sizeof(char),nb,fptr2);
     }
-    //fscanf(fptr, "%s", buff);
-    //printf("1 : %s\n", buff );
-    //fgets(buff, 255, (FILE*)fptr);
+
     fclose(fptr) ;
+    fclose(fptr2) ;
 
     char *filename = strrchr(argv[3],'/');
     filename = filename+1 ;
