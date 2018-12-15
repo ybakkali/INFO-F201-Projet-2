@@ -23,28 +23,20 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    FILE *fptr , *fptr2;
+    FILE *fptr ;
     char buff[MAXDATASIZE];
 
     fptr = fopen(argv[3], "r");
-    fptr2 = fopen("/Users/bakkali/github/C-project/copy.pdf","w") ;
-    if( (fptr == NULL) || (fptr2 == NULL) )
-    {
+    if ( fptr == NULL ) {
        perror("Error : No such file");
        return EXIT_FAILURE;
     }
-    int nb = 1;
-    while ((nb = fread(buff,sizeof(char),MAXDATASIZE,fptr))) {
-      printf("%d\n",nb) ;
-      fwrite (buff,sizeof(char),nb,fptr2);
-    }
+    //fptr2 = fopen("/Users/bakkali/github/C-project/copy.pdf","w") ;
+    fseek(fptr, 0 , SEEK_END);
+    unsigned long fileSize = ftell(fptr);
+    printf("%lu \n",fileSize) ;
 
-    fclose(fptr) ;
-    fclose(fptr2) ;
 
-    char *filename = strrchr(argv[3],'/');
-    filename = filename+1 ;
-    printf("%s \n",(filename)) ;
 
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
@@ -73,17 +65,13 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    char *filename = strrchr(argv[3],'/')+1;
+    printf("%s \n",(filename)) ;
     int m = 0 ;
-    unsigned long size ;
-    for (m=0 ;m<2; ++m) {
-      if (m==0) {
-        size = strlen(argv[2]) ;
-      }
-      else {
-        size = strlen(filename) ;
-      }
+    unsigned long sizes[] = {strlen(argv[2]),strlen(filename),fileSize} ;
+    for (m = 0 ; m < 3 ; ++m) {
 
-      if (send(sockfd, &size ,sizeof(long),0)==-1) {
+      if (send(sockfd, &sizes[m] ,sizeof(long),0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
@@ -118,7 +106,18 @@ int main(int argc, char *argv[])
 
     printf("Serveur envoie : %s",buf);
 
+    int nb = 1;
+    rewind(fptr);
+    while ((nb = fread(buff,sizeof(char),MAXDATASIZE,fptr))) {
+      if (send(sockfd,buff,nb,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+      }
+    }
+
     close(sockfd);
+    fclose(fptr) ;
+
 
     return EXIT_SUCCESS;
 }

@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
       /* this is the child process */
       close(server_sockfd);
 
-      int sizes[] = {0,4,2,2,0} ;
+      int sizes[] = {0,4,2,2,0,0} ;
       int i ;
-      for (i = 0 ; i < 2 ; ++i) {
+      for (i = 0 ; i < 3 ; ++i) {
           unsigned long size ;
           int n = recv(client_sockfd, &size, sizeof(long), 0);
           if ( n == -1) {
@@ -111,8 +111,11 @@ int main(int argc, char *argv[])
           if (i==0) {
             sizes[0] = size;
           }
-          else {
+          else if (i==1) {
             sizes[4] = size ;
+          }
+          else {
+            sizes[5] = size ;
           }
       }
       char *path = argv[1] ;
@@ -131,10 +134,10 @@ int main(int argc, char *argv[])
           }
 
           buf[numbytes] = '\0';
-          if (counter < 4 ) {
-            strcat(path,"/") ;
-            strcat(path,buf) ;
-          }
+
+          strcat(path,"/") ;
+          strcat(path,buf) ;
+
           switch (counter) {
             case 0 :
               strcpy(dirUser,path) ;
@@ -159,7 +162,6 @@ int main(int argc, char *argv[])
       printf ("%s\n%s\n%s\n%s\n",dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay) ;
       char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
       createDir(dir,0) ;
-      printf("%s\n",filename) ;
 
       char message[] = {"Bien reçu\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
@@ -167,6 +169,28 @@ int main(int argc, char *argv[])
       	return EXIT_FAILURE;
       }
 
+      FILE *fptr ;
+      printf("%s\n",path) ;
+      fptr = fopen(path , "w");
+      if ( fptr == NULL )
+      {
+         perror("Error : No such file");
+         return EXIT_FAILURE;
+      }
+
+      int fileSize = 0 ;
+      int nb ;
+      while (fileSize < sizes[5] ) {
+        nb = recv(client_sockfd, buf, MAXDATASIZE , 0) ;
+        if ( nb == -1) {
+            perror("Server: recv");
+            return EXIT_FAILURE;
+        }
+        fwrite (buf,sizeof(char),nb,fptr);
+        fileSize += nb ;
+      }
+
+      fclose(fptr) ;
       return EXIT_SUCCESS;
     }
 
