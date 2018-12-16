@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
               return EXIT_FAILURE;
           }
 
-          printf("Recieve size %lu \n",size) ;
+          printf("Recieve size : %lu \n",size) ;
           if (i==0) {
             messageSize[0] = size;
           }
@@ -118,17 +118,15 @@ int main(int argc, char *argv[])
       }
       char *path = argv[1] ;
       int len = strlen(argv[1]) + messageSize[0] + 1 ;
-      char dirUser[len] ;
-      len += 5 ;
-      char dirUserYear[len] ;
-      len += 3 ;
-      char dirUserYearMonth[len] ;
-      len += 3 ;
-      char dirUserYearMonthDay[len] ;
+      int length[] = {len,len+5,len+8,len+11} ;
+      char dirUser[length[0]] ;
+      char dirUserYear[length[1]] ;
+      char dirUserYearMonth[length[2]] ;
+      char dirUserYearMonthDay[length[3]] ;
       char filename[messageSize[4]] ;
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
-          printf("Message size %d \n",messageSize[counter]) ;
+          printf("Message size : %d \n",messageSize[counter]) ;
           numbytes = recv(client_sockfd, buffer, messageSize[counter], 0) ;
           if ( numbytes == -1) {
               perror("Server: recv");
@@ -189,13 +187,10 @@ int main(int argc, char *argv[])
         fwrite (buffer,sizeof(char),nb,fptr);
         fileSize += nb ;
       }
-
       fclose(fptr) ;
       return EXIT_SUCCESS;
     }
-
     close(client_sockfd);
   }
-
   return EXIT_SUCCESS;
 }
