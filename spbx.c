@@ -17,8 +17,9 @@
 #define BACKLOG 20
 #define MAXDATASIZE 1024
 
-void createDir(char **dir,int index) {
+void makeDirectories(char **dir,int index) {
   if (index < 4 ) {
+      printf("%s \n",dir[index]) ;
       struct stat st = {0};
       int x = 0 ;
       if (stat(dir[index], &st) == -1) {
@@ -27,7 +28,7 @@ void createDir(char **dir,int index) {
       if (x == -1) {
         perror("Error : mkdir");
       }
-      createDir(dir,index+1) ;
+      makeDirectories(dir,index+1) ;
   }
 }
 
@@ -35,31 +36,30 @@ void createDir(char **dir,int index) {
 int main(int argc, char *argv[])
 {
   if (argc != 2) {
-      fprintf(stderr,"usage: synopsis erroné\n");
+      fprintf(stderr,"Error : synopsis\n");
       return EXIT_FAILURE;
   }
 
-  int server_sockfd, client_sockfd, numbytes;
+  int server_sockfd, client_sockfd ;
   // Ecouter sur server_sockfd
   // Se connecter sur client_sockfd
   struct sockaddr_in server_addr;
   // Information de l'adresse du serveur
   struct sockaddr_in client_addr;
   // Information de l'adresse du client
-  char buf[MAXDATASIZE];
+  char buffer[MAXDATASIZE];
   //Stocker
 
   server_sockfd = socket(PF_INET,SOCK_STREAM, 0) ;
-
   if (server_sockfd == -1) {
-    perror("Serveur: socket");
+    perror("Server: socket");
     return EXIT_FAILURE;
   }
 
   int yes=1;
   if (setsockopt(server_sockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1)
   {
-    perror("Serveur: setsockopt");
+    perror("Server: setsockopt");
     return EXIT_FAILURE;
   }
 
@@ -69,15 +69,14 @@ int main(int argc, char *argv[])
   server_addr.sin_addr.s_addr = INADDR_ANY;
   memset(&(server_addr.sin_zero), '\0', 8);
 
-
   if (bind(server_sockfd,(struct sockaddr *)&server_addr,sizeof(struct sockaddr)) == -1)
   {
-    perror("Serveur: bind");
+    perror("Server: bind");
     return EXIT_FAILURE;
   }
 
   if (listen(server_sockfd, BACKLOG) == -1) {
-    perror("Serveur: listen");
+    perror("Server: listen");
     return EXIT_FAILURE;
   }
 
@@ -86,22 +85,21 @@ int main(int argc, char *argv[])
   while(1){
 
     client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_addr,&sin_size);
-
     if (client_sockfd == -1) {
-      perror("Serveur: accept");
+      perror("Server: accept");
     }
 
-    printf("Serveur:  connection recue du client %s\n",inet_ntoa(client_addr.sin_addr));
+    printf("Server: connection received from the client %s\n",inet_ntoa(client_addr.sin_addr));
 
     if (fork()==0) {
       /* this is the child process */
       close(server_sockfd);
 
-      int sizes[] = {0,4,2,2,0,0} ;
-      int i ;
+      int messageSize[] = {0,4,2,2,0,0} ;
+      unsigned long size ;
+      int i , n  ;
       for (i = 0 ; i < 3 ; ++i) {
-          unsigned long size ;
-          int n = recv(client_sockfd, &size, sizeof(long), 0);
+          n = recv(client_sockfd, &size, sizeof(long), 0);
           if ( n == -1) {
               perror("Server: recv");
               return EXIT_FAILURE;
@@ -109,34 +107,38 @@ int main(int argc, char *argv[])
 
           printf("Recieve size %lu \n",size) ;
           if (i==0) {
-            sizes[0] = size;
+            messageSize[0] = size;
           }
           else if (i==1) {
-            sizes[4] = size ;
+            messageSize[4] = size ;
           }
           else {
-            sizes[5] = size ;
+            messageSize[5] = size ;
           }
       }
       char *path = argv[1] ;
-      char *dirUser = malloc(100 * sizeof(char)) ;
-      char *dirUserYear = malloc(100 * sizeof(char)) ;
-      char *dirUserYearMonth = malloc(100 * sizeof(char)) ;
-      char *dirUserYearMonthDay = malloc(100 * sizeof(char)) ;
-      char filename[sizes[4]] ;
-      int counter ;
+      int len = strlen(argv[1]) + messageSize[0] + 1 ;
+      char dirUser[len] ;
+      len += 5 ;
+      char dirUserYear[len] ;
+      len += 3 ;
+      char dirUserYearMonth[len] ;
+      len += 3 ;
+      char dirUserYearMonthDay[len] ;
+      char filename[messageSize[4]] ;
+      int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
-          printf("message size %d \n",sizes[counter]) ;
-          numbytes = recv(client_sockfd, buf, sizes[counter], 0) ;
+          printf("Message size %d \n",messageSize[counter]) ;
+          numbytes = recv(client_sockfd, buffer, messageSize[counter], 0) ;
           if ( numbytes == -1) {
               perror("Server: recv");
               return EXIT_FAILURE;
           }
 
-          buf[numbytes] = '\0';
-
+          buffer[numbytes] = '\0';
+          printf("Message received from the customer : %s \n",buffer);
           strcat(path,"/") ;
-          strcat(path,buf) ;
+          strcat(path,buffer) ;
 
           switch (counter) {
             case 0 :
@@ -152,20 +154,18 @@ int main(int argc, char *argv[])
               strcpy(dirUserYearMonthDay,path) ;
               break ;
             case 4 :
-              strcpy(filename,buf) ;
+              strcpy(filename,buffer) ;
               break ;
             default :
               printf("OK\n");
           }
-          printf("Message recu du client: %s \n",buf);
       }
-      printf ("%s\n%s\n%s\n%s\n",dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay) ;
       char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
-      createDir(dir,0) ;
+      makeDirectories(dir,0) ;
 
-      char message[] = {"Bien reçu\n"} ;
+      char message[] = {"Well received\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
-      	perror("Serveur: send");
+      	perror("Server: send");
       	return EXIT_FAILURE;
       }
 
@@ -180,13 +180,13 @@ int main(int argc, char *argv[])
 
       int fileSize = 0 ;
       int nb ;
-      while (fileSize < sizes[5] ) {
-        nb = recv(client_sockfd, buf, MAXDATASIZE , 0) ;
+      while (fileSize < messageSize[5] ) {
+        nb = recv(client_sockfd, buffer, MAXDATASIZE , 0) ;
         if ( nb == -1) {
             perror("Server: recv");
             return EXIT_FAILURE;
         }
-        fwrite (buf,sizeof(char),nb,fptr);
+        fwrite (buffer,sizeof(char),nb,fptr);
         fileSize += nb ;
       }
 

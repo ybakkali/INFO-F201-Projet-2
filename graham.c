@@ -24,22 +24,17 @@ int main(int argc, char *argv[])
     }
 
     FILE *fptr ;
-    char buff[MAXDATASIZE];
+    char buffer[MAXDATASIZE];
 
     fptr = fopen(argv[3], "r");
     if ( fptr == NULL ) {
        perror("Error : No such file");
        return EXIT_FAILURE;
     }
-    //fptr2 = fopen("/Users/bakkali/github/C-project/copy.pdf","w") ;
     fseek(fptr, 0 , SEEK_END);
     unsigned long fileSize = ftell(fptr);
     printf("%lu \n",fileSize) ;
 
-
-
-    int sockfd, numbytes;
-    char buf[MAXDATASIZE];
     struct hostent *he;
     struct sockaddr_in their_addr; // connector's address information
 
@@ -49,7 +44,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0) ;
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0) ;
     if ( sockfd == -1) {
         perror("Client: socket");
         return EXIT_FAILURE;
@@ -68,10 +63,10 @@ int main(int argc, char *argv[])
     char *filename = strrchr(argv[3],'/')+1;
     printf("%s \n",(filename)) ;
     int m = 0 ;
-    unsigned long sizes[] = {strlen(argv[2]),strlen(filename),fileSize} ;
+    unsigned long messageSize[] = {strlen(argv[2]),strlen(filename),fileSize} ;
     for (m = 0 ; m < 3 ; ++m) {
 
-      if (send(sockfd, &sizes[m] ,sizeof(long),0)==-1) {
+      if (send(sockfd, &messageSize[m] ,sizeof(long),0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
@@ -80,36 +75,35 @@ int main(int argc, char *argv[])
 
     int counter ;
     int index[4] = {2,4,5,6} ;
+    char *message ;
     for (counter = 0 ; counter < 5 ; ++counter ) {
       switch (counter) {
         case 4 :
-            if (send(sockfd,filename,strlen(filename),0)==-1) {
-              perror("Client: send error");
-              return EXIT_FAILURE;
-            }
+            message = filename ;
             break ;
         default :
-          if (send(sockfd,argv[index[counter]],strlen(argv[index[counter]]),0)==-1) {
-            perror("Client: send error");
-            return EXIT_FAILURE;
-          }
+            message = argv[index[counter]] ;
+      }
+      if (send(sockfd,message,strlen(message),0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
       }
     }
 
-    numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0) ;
+    int numbytes = recv(sockfd, buffer, MAXDATASIZE-1, 0) ;
     if ( numbytes == -1) {
         perror("Client: recv");
         return EXIT_FAILURE;
     }
 
-    buf[numbytes] = '\0';
+    buffer[numbytes] = '\0';
 
-    printf("Serveur envoie : %s",buf);
+    printf("Server send : %s",buffer);
 
     int nb = 1;
     rewind(fptr);
-    while ((nb = fread(buff,sizeof(char),MAXDATASIZE,fptr))) {
-      if (send(sockfd,buff,nb,0)==-1) {
+    while ((nb = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
+      if (send(sockfd,buffer,nb,0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
@@ -117,7 +111,5 @@ int main(int argc, char *argv[])
 
     close(sockfd);
     fclose(fptr) ;
-
-
     return EXIT_SUCCESS;
 }
