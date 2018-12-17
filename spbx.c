@@ -96,10 +96,10 @@ int main(int argc, char *argv[])
       close(server_sockfd);
 
       char *path = argv[1] ;
-      char dirUser[MAXDATASIZE] ;
-      char dirUserYear[MAXDATASIZE] ;
-      char dirUserYearMonth[MAXDATASIZE] ;
-      char dirUserYearMonthDay[MAXDATASIZE] ;
+      char *dirUser = malloc(MAXDATASIZE * sizeof(char)) ;
+      char *dirUserYear = malloc(MAXDATASIZE * sizeof(char))  ;
+      char *dirUserYearMonth = malloc(MAXDATASIZE * sizeof(char))  ;
+      char *dirUserYearMonthDay = malloc(MAXDATASIZE * sizeof(char))  ;
       char filename[MAXDATASIZE] ;
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
