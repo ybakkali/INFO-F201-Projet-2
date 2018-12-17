@@ -95,39 +95,16 @@ int main(int argc, char *argv[])
       /* this is the child process */
       close(server_sockfd);
 
-      int messageSize[] = {0,4,2,2,0,0} ;
-      unsigned long size ;
-      int i , n  ;
-      for (i = 0 ; i < 3 ; ++i) {
-          n = recv(client_sockfd, &size, sizeof(long), 0);
-          if ( n == -1) {
-              perror("Server: recv");
-              return EXIT_FAILURE;
-          }
-
-          printf("Recieve size : %lu \n",size) ;
-          if (i==0) {
-            messageSize[0] = size;
-          }
-          else if (i==1) {
-            messageSize[4] = size ;
-          }
-          else {
-            messageSize[5] = size ;
-          }
-      }
       char *path = argv[1] ;
-      int len = strlen(argv[1]) + messageSize[0] + 1 ;
-      int length[] = {len,len+5,len+8,len+11} ;
-      char dirUser[length[0]] ;
-      char dirUserYear[length[1]] ;
-      char dirUserYearMonth[length[2]] ;
-      char dirUserYearMonthDay[length[3]] ;
-      char filename[messageSize[4]] ;
+      char dirUser[MAXDATASIZE] ;
+      char dirUserYear[MAXDATASIZE] ;
+      char dirUserYearMonth[MAXDATASIZE] ;
+      char dirUserYearMonthDay[MAXDATASIZE] ;
+      char filename[MAXDATASIZE] ;
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
-          printf("Message size : %d \n",messageSize[counter]) ;
-          numbytes = recv(client_sockfd, buffer, messageSize[counter], 0) ;
+          numbytes = recv(client_sockfd, buffer, MAXDATASIZE, 0) ;
+          printf("Message size : %d \n",numbytes) ;
           if ( numbytes == -1) {
               perror("Server: recv");
               return EXIT_FAILURE;
@@ -161,7 +138,7 @@ int main(int argc, char *argv[])
       char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
       makeDirectories(dir,0) ;
 
-      char message[] = {"Well received\n"} ;
+      char message[] = {"Username received\nDate received\nFilename received\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
       	perror("Server: send");
       	return EXIT_FAILURE;
@@ -176,9 +153,18 @@ int main(int argc, char *argv[])
          return EXIT_FAILURE;
       }
 
+      unsigned long messageSize ;
+      int v ;
+      v = recv(client_sockfd, &messageSize, sizeof(long), 0) ;
+      if ( v == -1) {
+          perror("Server: recv");
+          return EXIT_FAILURE;
+      }
+      printf("File size : %lu \n",messageSize) ;
+
       int fileSize = 0 ;
       int nb ;
-      while (fileSize < messageSize[5] ) {
+      while (fileSize < messageSize ) {
         nb = recv(client_sockfd, buffer, MAXDATASIZE , 0) ;
         if ( nb == -1) {
             perror("Server: recv");
@@ -186,6 +172,9 @@ int main(int argc, char *argv[])
         }
         fwrite (buffer,sizeof(char),nb,fptr);
         fileSize += nb ;
+        if (nb == 0 && fileSize < messageSize) {
+          printf("Damaged file") ;
+        }
       }
       fclose(fptr) ;
       return EXIT_SUCCESS;

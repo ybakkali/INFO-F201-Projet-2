@@ -23,17 +23,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    FILE *fptr ;
     char buffer[MAXDATASIZE];
-
-    fptr = fopen(argv[3], "r");
-    if ( fptr == NULL ) {
-       perror("Error : No such file");
-       return EXIT_FAILURE;
-    }
-    fseek(fptr, 0 , SEEK_END);
-    unsigned long fileSize = ftell(fptr);
-    printf("%lu \n",fileSize) ;
 
     struct hostent *he;
     struct sockaddr_in their_addr; // connector's address information
@@ -61,21 +51,9 @@ int main(int argc, char *argv[])
     }
 
     char *filename = strrchr(argv[3],'/')+1;
-    printf("%s \n",(filename)) ;
-    int m = 0 ;
-    unsigned long messageSize[] = {strlen(argv[2]),strlen(filename),fileSize} ;
-    for (m = 0 ; m < 3 ; ++m) {
-
-      if (send(sockfd, &messageSize[m] ,sizeof(long),0)==-1) {
-        perror("Client: send error");
-        return EXIT_FAILURE;
-      }
-      printf("Send size\n") ;
-      }
-
-    int counter ;
     int index[4] = {2,4,5,6} ;
     char *message ;
+    int counter ;
     for (counter = 0 ; counter < 5 ; ++counter ) {
       switch (counter) {
         case 4 :
@@ -84,31 +62,42 @@ int main(int argc, char *argv[])
         default :
             message = argv[index[counter]] ;
       }
-      if (send(sockfd,message,strlen(message),0)==-1) {
+      if (send(sockfd,message,MAXDATASIZE,0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
     }
 
-    int numbytes = recv(sockfd, buffer, MAXDATASIZE-1, 0) ;
+    int numbytes = recv(sockfd, buffer, MAXDATASIZE, 0) ;
     if ( numbytes == -1) {
         perror("Client: recv");
         return EXIT_FAILURE;
     }
-
     buffer[numbytes] = '\0';
+    printf("Server send :\n%s",buffer);
 
-    printf("Server send : %s",buffer);
+    FILE *fptr = fopen(argv[3], "r");
+    if ( fptr == NULL ) {
+       perror("Error : No such file");
+       return EXIT_FAILURE;
+    }
+    fseek(fptr, 0 , SEEK_END);
+    unsigned long fileSize = ftell(fptr);
+    rewind(fptr);
+    printf("%lu \n",fileSize) ;
+
+    if (send(sockfd, &fileSize , sizeof(long) ,0)==-1) {
+      perror("Client: send error");
+      return EXIT_FAILURE;
+    }
 
     int nb = 1;
-    rewind(fptr);
     while ((nb = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
       if (send(sockfd,buffer,nb,0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
     }
-
     close(sockfd);
     fclose(fptr) ;
     return EXIT_SUCCESS;
