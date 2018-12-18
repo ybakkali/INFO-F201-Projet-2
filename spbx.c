@@ -32,6 +32,27 @@ void makeDirectories(char **dir,int index) {
   }
 }
 
+int makeCopy(char *path , FILE* ftmp) {
+
+  rewind(ftmp);
+  FILE *fptr ;
+  printf("%s\n",path) ;
+  fptr = fopen(path , "w");
+  if ( fptr == NULL )
+  {
+     perror("Error : No such file");
+     return EXIT_FAILURE;
+  }
+
+  int nb = 1;
+  char buff[MAXDATASIZE];
+  while ((nb = fread(buff,sizeof(char),MAXDATASIZE,ftmp))) {
+    //printf("%d\n",nb) ;
+    fwrite (buff,sizeof(char),nb,fptr);
+  }
+  fclose(fptr) ;
+  return EXIT_SUCCESS ;
+}
 
 int main(int argc, char *argv[])
 {
@@ -135,24 +156,16 @@ int main(int argc, char *argv[])
               printf("OK\n");
           }
       }
-      char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
-      makeDirectories(dir,0) ;
 
+      //free() ;
       char message[] = {"Username received\nDate received\nFilename received\n"} ;
       if (send(client_sockfd, message ,strlen(message),0)==-1) {
       	perror("Server: send");
       	return EXIT_FAILURE;
       }
 
-      FILE *fptr ;
-      printf("%s\n",path) ;
-      fptr = fopen(path , "w");
-      if ( fptr == NULL )
-      {
-         perror("Error : No such file");
-         return EXIT_FAILURE;
-      }
-
+      FILE *fp;
+      fp = tmpfile();
       unsigned long messageSize ;
       int v ;
       v = recv(client_sockfd, &messageSize, sizeof(long), 0) ;
@@ -170,13 +183,19 @@ int main(int argc, char *argv[])
             perror("Server: recv");
             return EXIT_FAILURE;
         }
-        fwrite (buffer,sizeof(char),nb,fptr);
+        fwrite (buffer,sizeof(char),nb,fp);
         fileSize += nb ;
         if (nb == 0 && fileSize < messageSize) {
           printf("Damaged file") ;
         }
       }
-      fclose(fptr) ;
+
+
+      char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
+      makeDirectories(dir,0) ;
+      makeCopy(path,fp) ;
+
+
       return EXIT_SUCCESS;
     }
     close(client_sockfd);
