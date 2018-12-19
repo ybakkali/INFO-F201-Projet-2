@@ -132,13 +132,13 @@ int main(int argc, char *argv[])
       // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day/file"
       memset(path, '\0', sizeof(path));
       strcpy(path,argv[1]) ;
-      char dirUser [MAXDATASIZE] ;
+      char username [MAXDATASIZE] ;
       // Liste pour stocker le path "/chemin/vers/poolv2/username
-      char dirUserYear [MAXDATASIZE] ;
+      char year [MAXDATASIZE] ;
       // Liste pour stocker le path "/chemin/vers/poolv2/username/year
-      char dirUserYearMonth [MAXDATASIZE] ;
+      char month [MAXDATASIZE] ;
       // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month
-      char dirUserYearMonthDay [MAXDATASIZE] ;
+      char day [MAXDATASIZE] ;
       // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day
       char filename[MAXDATASIZE] ;
       // Liste pour stocker le nom du fichier photo
@@ -151,22 +151,19 @@ int main(int argc, char *argv[])
           }
 
           buffer[numbytes] = '\0';
-          printf("Message received from the client : %s \n",buffer);
-          strcat(path,"/") ;
-          strncat(path,buffer,strlen(buffer)) ;
-          printf("len path %ld \n",strlen(path)) ;
+
           switch (counter) {
             case 0 :
-              strcpy(dirUser,path) ;
+              strcpy(username,buffer) ;
               break ;
             case 1 :
-              strcpy(dirUserYear,path) ;
+              strcpy(year,buffer) ;
               break ;
             case 2 :
-              strcpy(dirUserYearMonth,path) ;
+              strcpy(month,buffer) ;
               break ;
             case 3 :
-              strcpy(dirUserYearMonthDay,path) ;
+              strcpy(day,buffer) ;
               break ;
             case 4 :
               strcpy(filename,buffer) ;
@@ -223,7 +220,8 @@ int main(int argc, char *argv[])
         }
       }
 
-      char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
+      char *dir[4] = {username,year,month,day} ;
+      makePath() ;
       makeDirectories(dir,client_sockfd) ;
       makeCopy(path,ftmp,client_sockfd) ;
 
