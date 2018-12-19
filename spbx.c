@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
       }
 
-      char finalPATH[MAXDATASIZE+1] ;
+      char finalPATH[MAXDATASIZE] ;
       makePATH(dir,argv[1],finalPATH,client_sockfd);
       makeCopy(finalPATH,ftmp,client_sockfd) ;
 
