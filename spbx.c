@@ -1,21 +1,28 @@
-//Server
+// BAKKALI Yahya
+// 00445166
+// Server code
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
+
 #include <sys/socket.h>
-//#include <netinet/in.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <netdb.h>
+
 #include <sys/stat.h>
 
-#define MYPORT 5555
+#define PORT 5555
 #define BACKLOG 20
 #define MAXDATASIZE 1024
 
-int makeDirectories(char *dir ,int sockfd) {
-  /* Fonction pour créer l'arborescence dans le pool v2 */
+int makeDirectory(char *dir ,int sockfd) {
+
+  /* Fonction pour créer un repertoire */
 
   int  dirStat ;
   printf("%s \n",dir) ;
@@ -29,7 +36,7 @@ int makeDirectories(char *dir ,int sockfd) {
       // Le repertoire n'est pas créer
       perror("Error : mkdir");
       if (send(sockfd, "1Error : mkdir" ,MAXDATASIZE,0)==-1) {
-        // Envoyer au client l'erreur parvenu
+        // Envoyer au client l'erreur parvenue
         perror("Server: send");
         return EXIT_FAILURE;
       }
@@ -38,28 +45,32 @@ int makeDirectories(char *dir ,int sockfd) {
   return EXIT_SUCCESS ;
 }
 
-void makePath(char **dir,char *pathPool,char *final,int sockfd ) {
+void makePATH(char **dir,char *PoolV2PATH,char *finalPATH,int sockfd) {
+
+  /* Fonction pour créer l'arborescence dans le pool v2 */
 
   char dirPATH[MAXDATASIZE] ;
-  strcpy(dirPATH,pathPool) ;
+  strcpy(dirPATH,PoolV2PATH) ;
   int index  ;
   for ( index = 0 ; index < 4 ; index++ ) {
       strcat(dirPATH,"/") ;
       strcat(dirPATH,dir[index]) ;
-      makeDirectories(dirPATH,sockfd) ;
+      makeDirectory(dirPATH,sockfd) ;
   }
-  strcpy(final,dirPATH) ;
+  strcat(dirPATH,"/") ;
+  strcat(dirPATH,dir[4]) ;
+  strcpy(finalPATH,dirPATH) ;
 }
 
-int makeCopy(char *path , FILE* ftmp , int sockfd ) {
+int makeCopy(char *path , FILE* ftmp , int sockfd) {
   /* Fonction pour copier le fichier qui se trouve dans
-     "/temp/file" vers le bon endroit dans pool v2
+     "/tmp/file" vers le bon endroit dans pool v2
      "/chemin/vers/poolv2/username/year/month/day/file"
   */
 
   rewind(ftmp);
   FILE *fptr ;
-  printf("%s\n",path) ;
+  printf("Move file to : %s\n",path) ;
   fptr = fopen(path , "w");
   if ( fptr == NULL )
   {
@@ -110,7 +121,7 @@ int main(int argc, char *argv[])
   }
 
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(MYPORT);
+  server_addr.sin_port = htons(PORT);
   server_addr.sin_addr.s_addr = INADDR_ANY;
   memset(&(server_addr.sin_zero), '\0', 8);
 
@@ -127,7 +138,7 @@ int main(int argc, char *argv[])
 
   unsigned int sin_size = sizeof(struct sockaddr_in);
   while(1){
-    /* Processus pere */
+    /* Processus du  pere */
     client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_addr,&sin_size);
     if (client_sockfd == -1) {
       perror("Server: accept");
@@ -136,64 +147,56 @@ int main(int argc, char *argv[])
     printf("Server: connection received from the client %s\n",inet_ntoa(client_addr.sin_addr));
 
     if (fork()==0) {
-      /* Processus fils */
+      /* Processus du fils */
       close(server_sockfd);
       // Fermer le socket du serveur
-      char path[MAXDATASIZE] ;
-      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day/file"
-      memset(path, '\0', sizeof(path));
-      strcpy(path,argv[1]) ;
       char username [MAXDATASIZE] ;
-      // Liste pour stocker le path "/chemin/vers/poolv2/username
+      // Liste pour stocker le "username"
       char year [MAXDATASIZE] ;
-      // Liste pour stocker le path "/chemin/vers/poolv2/username/year
+      // Liste pour stocker le "year"
       char month [MAXDATASIZE] ;
-      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month
+      // Liste pour stocker le "month"
       char day [MAXDATASIZE] ;
-      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day
+      // Liste pour stocker le "day"
       char filename[MAXDATASIZE] ;
-      // Liste pour stocker le nom du fichier photo
+      // Liste pour stocker le "filename"
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
           numbytes = recv(client_sockfd, buffer, MAXDATASIZE, 0) ;
           if ( numbytes == -1) {
-              perror("Server: recv");
+            if (send(client_sockfd, "1Error : Username not received\nDate not received\nFilename not received\n" ,MAXDATASIZE,0)==-1) {
+              // Envoyer au client l'erreur parvenue
+              perror("Server: send");
               return EXIT_FAILURE;
+            }
+            perror("Server: recv");
+            return EXIT_FAILURE;
           }
 
           buffer[numbytes] = '\0';
 
           switch (counter) {
-            case 0 :
-              strcpy(username,buffer) ;
-              break ;
-            case 1 :
-              strcpy(year,buffer) ;
-              break ;
-            case 2 :
-              strcpy(month,buffer) ;
-              break ;
-            case 3 :
-              strcpy(day,buffer) ;
-              break ;
-            case 4 :
-              strcpy(filename,buffer) ;
-              break ;
+            case 0 : strcpy(username,buffer) ; break ;
+            case 1 : strcpy(year,buffer) ; break ;
+            case 2 : strcpy(month,buffer) ; break ;
+            case 3 : strcpy(day,buffer) ; break ;
+            case 4 : strcpy(filename,buffer) ; break ;
           }
       }
 
-      char message[] = {"Username received\nDate received\nFilename received\n"} ;
-      if (send(client_sockfd, message ,MAXDATASIZE,0)==-1) {
+
+      if (send(client_sockfd,"Username received\nDate received\nFilename received\n" ,MAXDATASIZE,0)==-1) {
       	perror("Server: send");
       	return EXIT_FAILURE;
       }
 
-      FILE *ftmp ;
-      // Pointeur vers le fichier temporaire
+
       char tmpPath[MAXDATASIZE] = "/tmp/" ;
       // Path où le fichier temporaire va être stocker
       strcat(tmpPath,filename) ;
       printf("%s\n",tmpPath) ;
+      FILE *ftmp ;
+      // Pointeur vers le fichier temporaire
       ftmp = fopen(tmpPath , "w+");
       // Créer le fichier temporaire
       if ( ftmp == NULL )
@@ -225,18 +228,21 @@ int main(int argc, char *argv[])
         }
         fwrite (buffer,sizeof(char),numbytes__,ftmp);
         fileSize += numbytes__ ;
-        if (numbytes__ == 0 && fileSize < recvFileSize) {
-          fprintf(stderr,"Damaged file") ;
-          return EXIT_FAILURE;
-        }
       }
 
-      char *dir[4] = {username,year,month,day} ;
+      if (fileSize < recvFileSize) {
+        fprintf(stderr,"Damaged file") ;
+        if (send(client_sockfd, "1Error : Damaged file" ,MAXDATASIZE,0)==-1) {
+          // Envoyer au client l'erreur parvenue
+          perror("Server: send");
+          return EXIT_FAILURE;
+        }
+        return EXIT_FAILURE;
+      }
 
+      char *dir[5] = {username,year,month,day,filename} ;
       char finalPATH[MAXDATASIZE] ;
-      makePath(dir,argv[1],finalPATH,client_sockfd);
-      strcat(finalPATH,"/") ;
-      strcat(finalPATH,filename) ;
+      makePATH(dir,argv[1],finalPATH,client_sockfd);
       makeCopy(finalPATH,ftmp,client_sockfd) ;
 
       if (send(client_sockfd, "0\0" ,MAXDATASIZE,0)==-1) {
