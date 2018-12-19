@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
       }
     }
-    char EXIT_Message[MAXDATASIZE] ;
+    char EXIT_Message[MAXDATASIZE+1] ;
     if ( recv(sockfd, EXIT_Message ,MAXDATASIZE, 0) == -1) {
         // Reception du code 0 en cas de succès sinon 1 et l'erreur parvenue
         perror("Client: recv");

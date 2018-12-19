@@ -105,8 +105,6 @@ int main(int argc, char *argv[])
   // Information de l'adresse du serveur
   struct sockaddr_in client_addr;
   // Information de l'adresse du client
-  char buffer[MAXDATASIZE];
-  // Liste pour stocker les informations
 
   if ((server_sockfd = socket(PF_INET,SOCK_STREAM, 0)) == -1) {
     perror("Server: socket");
@@ -139,8 +137,7 @@ int main(int argc, char *argv[])
   unsigned int sin_size = sizeof(struct sockaddr_in);
   while(1){
     /* Processus du  pere */
-    client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_addr,&sin_size);
-    if (client_sockfd == -1) {
+    if ((client_sockfd= accept(server_sockfd,(struct sockaddr *)&client_addr,&sin_size))== -1) {
       perror("Server: accept");
     }
 
@@ -150,20 +147,22 @@ int main(int argc, char *argv[])
       /* Processus du fils */
       close(server_sockfd);
       // Fermer le socket du serveur
-      char username [MAXDATASIZE] ;
+      char buffer[MAXDATASIZE];
+      // Liste pour stocker les informations
+      char username [MAXDATASIZE+1] ;
       // Liste pour stocker le "username"
-      char year [MAXDATASIZE] ;
+      char year [MAXDATASIZE+1] ;
       // Liste pour stocker le "year"
-      char month [MAXDATASIZE] ;
+      char month [MAXDATASIZE+1] ;
       // Liste pour stocker le "month"
-      char day [MAXDATASIZE] ;
+      char day [MAXDATASIZE+1] ;
       // Liste pour stocker le "day"
-      char filename[MAXDATASIZE] ;
+      char filename[MAXDATASIZE+1] ;
       // Liste pour stocker le "filename"
       int counter , numbytes ;
+      char *dir[5] = {username,year,month,day,filename} ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
-          numbytes = recv(client_sockfd, buffer, MAXDATASIZE, 0) ;
-          if ( numbytes == -1) {
+          if ( (numbytes=recv(client_sockfd, buffer, MAXDATASIZE, 0)) == -1) {
             if (send(client_sockfd, "1Error : Username not received\nDate not received\nFilename not received\n" ,MAXDATASIZE,0)==-1) {
               // Envoyer au client l'erreur parvenue
               perror("Server: send");
@@ -172,26 +171,16 @@ int main(int argc, char *argv[])
             perror("Server: recv");
             return EXIT_FAILURE;
           }
-
           buffer[numbytes] = '\0';
-
-          switch (counter) {
-            case 0 : strcpy(username,buffer) ; break ;
-            case 1 : strcpy(year,buffer) ; break ;
-            case 2 : strcpy(month,buffer) ; break ;
-            case 3 : strcpy(day,buffer) ; break ;
-            case 4 : strcpy(filename,buffer) ; break ;
-          }
+          strcpy(dir[counter],buffer) ;
       }
-
 
       if (send(client_sockfd,"Username received\nDate received\nFilename received\n" ,MAXDATASIZE,0)==-1) {
       	perror("Server: send");
       	return EXIT_FAILURE;
       }
 
-
-      char tmpPath[MAXDATASIZE] = "/tmp/" ;
+      char tmpPath[MAXDATASIZE+1] = "/tmp/" ;
       // Path où le fichier temporaire va être stocker
       strcat(tmpPath,filename) ;
       printf("%s\n",tmpPath) ;
@@ -208,8 +197,7 @@ int main(int argc, char *argv[])
       // Taille du fichier photo qu'on va recevoir
       int numbytes_ ;
       // Numero des bytes reçues
-      numbytes_ = recv(client_sockfd, &recvFileSize, sizeof(long), 0) ;
-      if ( numbytes_ == -1) {
+      if ((numbytes_=recv(client_sockfd,&recvFileSize,sizeof(long),0))== -1) {
           perror("Server: recv");
           return EXIT_FAILURE;
       }
@@ -220,8 +208,7 @@ int main(int argc, char *argv[])
       int numbytes__ ;
       // Numero des bytes reçues
       while (fileSize < recvFileSize ) {
-        numbytes__ = recv(client_sockfd, buffer, MAXDATASIZE , 0) ;
-        if ( numbytes__ == -1) {
+        if ((numbytes__=recv(client_sockfd,buffer,MAXDATASIZE,0))==-1) {
             // Reception interrompue
             perror("Server: recv");
             return EXIT_FAILURE;
@@ -240,8 +227,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
       }
 
-      char *dir[5] = {username,year,month,day,filename} ;
-      char finalPATH[MAXDATASIZE] ;
+      char finalPATH[MAXDATASIZE+1] ;
       makePATH(dir,argv[1],finalPATH,client_sockfd);
       makeCopy(finalPATH,ftmp,client_sockfd) ;
 
