@@ -127,26 +127,31 @@ int main(int argc, char *argv[])
     if (fork()==0) {
       /* Processus fils */
       close(server_sockfd);
-
+      // Fermer le socket du serveur
       char path[MAXDATASIZE] ;
+      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day/file"
       memset(path, '\0', sizeof(path));
       strcpy(path,argv[1]) ;
       char dirUser [MAXDATASIZE] ;
+      // Liste pour stocker le path "/chemin/vers/poolv2/username
       char dirUserYear [MAXDATASIZE] ;
+      // Liste pour stocker le path "/chemin/vers/poolv2/username/year
       char dirUserYearMonth [MAXDATASIZE] ;
+      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month
       char dirUserYearMonthDay [MAXDATASIZE] ;
+      // Liste pour stocker le path "/chemin/vers/poolv2/username/year/month/day
       char filename[MAXDATASIZE] ;
+      // Liste pour stocker le nom du fichier photo
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
           numbytes = recv(client_sockfd, buffer, MAXDATASIZE, 0) ;
-          printf("Message size : %d \n",numbytes) ;
           if ( numbytes == -1) {
               perror("Server: recv");
               return EXIT_FAILURE;
           }
 
           buffer[numbytes] = '\0';
-          printf("Message received from the customer : %s \n",buffer);
+          printf("Message received from the client : %s \n",buffer);
           strcat(path,"/") ;
           strncat(path,buffer,strlen(buffer)) ;
           printf("len path %ld \n",strlen(path)) ;
@@ -166,8 +171,6 @@ int main(int argc, char *argv[])
             case 4 :
               strcpy(filename,buffer) ;
               break ;
-            default :
-              printf("OK\n");
           }
       }
 
@@ -225,12 +228,14 @@ int main(int argc, char *argv[])
       makeCopy(path,ftmp,client_sockfd) ;
 
       if (send(client_sockfd, "0\0" ,MAXDATASIZE,0)==-1) {
+        // Envoi du code 0 en cas de succès
         perror("Server: send");
         return EXIT_FAILURE;
       }
       return EXIT_SUCCESS;
     }
     close(client_sockfd);
+    // Fermer le socket du client
   }
   return EXIT_SUCCESS;
 }
