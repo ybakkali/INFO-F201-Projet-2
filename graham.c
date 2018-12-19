@@ -6,8 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
+//#include <netinet/in.h>
 #include <sys/socket.h>
 
 #define PORT 5555
@@ -22,8 +21,6 @@ int main(int argc, char *argv[])
         fprintf(stderr,"Error : synopsis\n");
         return EXIT_FAILURE;
     }
-
-    char buffer[MAXDATASIZE];
 
     struct hostent *he;
     struct sockaddr_in their_addr; // connector's address information
@@ -50,9 +47,9 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    char buffer[MAXDATASIZE] , *message ;
     char *filename = strrchr(argv[3],'/')+1;
     int index[4] = {2,4,5,6} ;
-    char *message ;
     int counter ;
     for (counter = 0 ; counter < 5 ; ++counter ) {
       switch (counter) {
@@ -98,6 +95,21 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
       }
     }
+
+    char EXIT_Message[MAXDATASIZE] ;
+    int x = recv(sockfd, EXIT_Message ,MAXDATASIZE, 0) ;
+    if ( x == -1) {
+        perror("Client: recv");
+        return EXIT_FAILURE;
+    }
+
+    char z = EXIT_Message[0] ;
+    printf("%c\n",z );
+    if ( z != '0' ) {
+      fprintf(stderr,"%s\n",EXIT_Message+1);
+      return EXIT_FAILURE;
+    }
+    printf("OK\n") ;
     close(sockfd);
     fclose(fptr) ;
     return EXIT_SUCCESS;

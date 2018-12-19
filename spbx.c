@@ -5,34 +5,46 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 //#include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <sys/wait.h>
-//#include <signal.h>
 #include <sys/stat.h>
 
 #define MYPORT 5555
 #define BACKLOG 20
 #define MAXDATASIZE 1024
 
-void makeDirectories(char **dir,int index) {
-  if (index < 4 ) {
+int makeDirectories(char **dir ,int sockfd) {
+  /* Fonction pour créer l'arborescence dans le pool v2 */
+
+  int index , dirStat  ;
+  for ( index = 0 ; index < 4 ; index++ ) {
       printf("%s \n",dir[index]) ;
       struct stat st = {0};
-      int x = 0 ;
+
       if (stat(dir[index], &st) == -1) {
-          x = mkdir(dir[index], 0750);
+          // Le repertoire n'existe pas
+          dirStat = mkdir(dir[index], 0750);
+          // Créer le repertoire
+          if (dirStat == -1) {
+            // Le repertoire n'est pas créer
+            perror("Error : mkdir");
+            if (send(sockfd, "1Error : mkdir" ,MAXDATASIZE,0)==-1) {
+              // Envoyer au client l'erreur parvenu
+              perror("Server: send");
+              return EXIT_FAILURE;
+            }
+          }
       }
-      if (x == -1) {
-        perror("Error : mkdir");
-      }
-      makeDirectories(dir,index+1) ;
   }
+  return EXIT_SUCCESS ;
 }
 
-int makeCopy(char *path , FILE* ftmp) {
+int makeCopy(char *path , FILE* ftmp , int sockfd ) {
+  /* Fonction pour copier le fichier qui se trouve dans
+     "/temp/file" vers le bon endroit dans pool v2
+     "/chemin/vers/poolv2/username/year/month/day/file"
+  */
 
   rewind(ftmp);
   FILE *fptr ;
@@ -40,15 +52,19 @@ int makeCopy(char *path , FILE* ftmp) {
   fptr = fopen(path , "w");
   if ( fptr == NULL )
   {
-     perror("Error : No such file");
+     perror("Error : File not create");
+     if (send(sockfd, "1Error : File not create" ,MAXDATASIZE,0)==-1) {
+       perror("Server: send");
+       return EXIT_FAILURE;
+     }
      return EXIT_FAILURE;
   }
 
-  int nb = 1;
+  int numbytes = 1;
   char buff[MAXDATASIZE];
-  while ((nb = fread(buff,sizeof(char),MAXDATASIZE,ftmp))) {
-    //printf("%d\n",nb) ;
-    fwrite (buff,sizeof(char),nb,fptr);
+  while ((numbytes = fread(buff,sizeof(char),MAXDATASIZE,ftmp))) {
+    //printf("%d\n",numbytes) ;
+    fwrite (buff,sizeof(char),numbytes,fptr);
   }
   fclose(fptr) ;
   return EXIT_SUCCESS ;
@@ -62,17 +78,15 @@ int main(int argc, char *argv[])
   }
 
   int server_sockfd, client_sockfd ;
-  // Ecouter sur server_sockfd
-  // Se connecter sur client_sockfd
+  // Ecouter sur server_sockfd et se connecter sur client_sockfd
   struct sockaddr_in server_addr;
   // Information de l'adresse du serveur
   struct sockaddr_in client_addr;
   // Information de l'adresse du client
   char buffer[MAXDATASIZE];
-  //Stocker
+  // Liste pour stocker les informations
 
-  server_sockfd = socket(PF_INET,SOCK_STREAM, 0) ;
-  if (server_sockfd == -1) {
+  if ((server_sockfd = socket(PF_INET,SOCK_STREAM, 0)) == -1) {
     perror("Server: socket");
     return EXIT_FAILURE;
   }
@@ -83,7 +97,6 @@ int main(int argc, char *argv[])
     perror("Server: setsockopt");
     return EXIT_FAILURE;
   }
-
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(MYPORT);
@@ -102,9 +115,8 @@ int main(int argc, char *argv[])
   }
 
   unsigned int sin_size = sizeof(struct sockaddr_in);
-
   while(1){
-
+    /* Processus pere */
     client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_addr,&sin_size);
     if (client_sockfd == -1) {
       perror("Server: accept");
@@ -113,14 +125,16 @@ int main(int argc, char *argv[])
     printf("Server: connection received from the client %s\n",inet_ntoa(client_addr.sin_addr));
 
     if (fork()==0) {
-      /* this is the child process */
+      /* Processus fils */
       close(server_sockfd);
 
-      char *path = argv[1] ;
-      char *dirUser = malloc(MAXDATASIZE * sizeof(char)) ;
-      char *dirUserYear = malloc(MAXDATASIZE * sizeof(char))  ;
-      char *dirUserYearMonth = malloc(MAXDATASIZE * sizeof(char))  ;
-      char *dirUserYearMonthDay = malloc(MAXDATASIZE * sizeof(char))  ;
+      char path[MAXDATASIZE] ;
+      memset(path, '\0', sizeof(path));
+      strcpy(path,argv[1]) ;
+      char dirUser [MAXDATASIZE] ;
+      char dirUserYear [MAXDATASIZE] ;
+      char dirUserYearMonth [MAXDATASIZE] ;
+      char dirUserYearMonthDay [MAXDATASIZE] ;
       char filename[MAXDATASIZE] ;
       int counter , numbytes ;
       for (counter = 0 ; counter < 5 ; ++counter ) {
@@ -134,8 +148,8 @@ int main(int argc, char *argv[])
           buffer[numbytes] = '\0';
           printf("Message received from the customer : %s \n",buffer);
           strcat(path,"/") ;
-          strcat(path,buffer) ;
-
+          strncat(path,buffer,strlen(buffer)) ;
+          printf("len path %ld \n",strlen(path)) ;
           switch (counter) {
             case 0 :
               strcpy(dirUser,path) ;
@@ -157,45 +171,63 @@ int main(int argc, char *argv[])
           }
       }
 
-      //free() ;
       char message[] = {"Username received\nDate received\nFilename received\n"} ;
-      if (send(client_sockfd, message ,strlen(message),0)==-1) {
+      if (send(client_sockfd, message ,MAXDATASIZE,0)==-1) {
       	perror("Server: send");
       	return EXIT_FAILURE;
       }
 
-      FILE *fp;
-      fp = tmpfile();
-      unsigned long messageSize ;
-      int v ;
-      v = recv(client_sockfd, &messageSize, sizeof(long), 0) ;
-      if ( v == -1) {
+      FILE *ftmp ;
+      // Pointeur vers le fichier temporaire
+      char tmpPath[MAXDATASIZE] = "/tmp/" ;
+      // Path où le fichier temporaire va être stocker
+      strcat(tmpPath,filename) ;
+      printf("%s\n",tmpPath) ;
+      ftmp = fopen(tmpPath , "w+");
+      // Créer le fichier temporaire
+      if ( ftmp == NULL )
+      {
+         perror("Error : No such file");
+         return EXIT_FAILURE;
+      }
+      unsigned long recvFileSize ;
+      // Taille du fichier photo qu'on va recevoir
+      int numbytes_ ;
+      // Numero des bytes reçues
+      numbytes_ = recv(client_sockfd, &recvFileSize, sizeof(long), 0) ;
+      if ( numbytes_ == -1) {
           perror("Server: recv");
           return EXIT_FAILURE;
       }
-      printf("File size : %lu \n",messageSize) ;
 
-      int fileSize = 0 ;
-      int nb ;
-      while (fileSize < messageSize ) {
-        nb = recv(client_sockfd, buffer, MAXDATASIZE , 0) ;
-        if ( nb == -1) {
+      printf("File size : %lu \n",recvFileSize) ;
+      unsigned long fileSize = 0 ;
+      // La taille finale du fichier photo reçue
+      int numbytes__ ;
+      // Numero des bytes reçues
+      while (fileSize < recvFileSize ) {
+        numbytes__ = recv(client_sockfd, buffer, MAXDATASIZE , 0) ;
+        if ( numbytes__ == -1) {
+            // Reception interrompue
             perror("Server: recv");
             return EXIT_FAILURE;
         }
-        fwrite (buffer,sizeof(char),nb,fp);
-        fileSize += nb ;
-        if (nb == 0 && fileSize < messageSize) {
-          printf("Damaged file") ;
+        fwrite (buffer,sizeof(char),numbytes__,ftmp);
+        fileSize += numbytes__ ;
+        if (numbytes__ == 0 && fileSize < recvFileSize) {
+          fprintf(stderr,"Damaged file") ;
+          return EXIT_FAILURE;
         }
       }
 
-
       char *dir[4] = {dirUser,dirUserYear,dirUserYearMonth,dirUserYearMonthDay} ;
-      makeDirectories(dir,0) ;
-      makeCopy(path,fp) ;
+      makeDirectories(dir,client_sockfd) ;
+      makeCopy(path,ftmp,client_sockfd) ;
 
-
+      if (send(client_sockfd, "0\0" ,MAXDATASIZE,0)==-1) {
+        perror("Server: send");
+        return EXIT_FAILURE;
+      }
       return EXIT_SUCCESS;
     }
     close(client_sockfd);
