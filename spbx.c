@@ -14,30 +14,41 @@
 #define BACKLOG 20
 #define MAXDATASIZE 1024
 
-int makeDirectories(char **dir ,int sockfd) {
+int makeDirectories(char *dir ,int sockfd) {
   /* Fonction pour créer l'arborescence dans le pool v2 */
 
-  int index , dirStat  ;
-  for ( index = 0 ; index < 4 ; index++ ) {
-      printf("%s \n",dir[index]) ;
-      struct stat st = {0};
+  int  dirStat ;
+  printf("%s \n",dir) ;
+  struct stat st = {0};
 
-      if (stat(dir[index], &st) == -1) {
-          // Le repertoire n'existe pas
-          dirStat = mkdir(dir[index], 0750);
-          // Créer le repertoire
-          if (dirStat == -1) {
-            // Le repertoire n'est pas créer
-            perror("Error : mkdir");
-            if (send(sockfd, "1Error : mkdir" ,MAXDATASIZE,0)==-1) {
-              // Envoyer au client l'erreur parvenu
-              perror("Server: send");
-              return EXIT_FAILURE;
-            }
-          }
+  if (stat(dir, &st) == -1) {
+    // Le repertoire n'existe pas
+    dirStat = mkdir(dir, 0750);
+    // Créer le repertoire
+    if (dirStat == -1) {
+      // Le repertoire n'est pas créer
+      perror("Error : mkdir");
+      if (send(sockfd, "1Error : mkdir" ,MAXDATASIZE,0)==-1) {
+        // Envoyer au client l'erreur parvenu
+        perror("Server: send");
+        return EXIT_FAILURE;
       }
+    }
   }
   return EXIT_SUCCESS ;
+}
+
+void makePath(char **dir,char *pathPool,char *final,int sockfd ) {
+
+  char dirPATH[MAXDATASIZE] ;
+  strcpy(dirPATH,pathPool) ;
+  int index  ;
+  for ( index = 0 ; index < 4 ; index++ ) {
+      strcat(dirPATH,"/") ;
+      strcat(dirPATH,dir[index]) ;
+      makeDirectories(dirPATH,sockfd) ;
+  }
+  strcpy(final,dirPATH) ;
 }
 
 int makeCopy(char *path , FILE* ftmp , int sockfd ) {
@@ -221,9 +232,12 @@ int main(int argc, char *argv[])
       }
 
       char *dir[4] = {username,year,month,day} ;
-      makePath() ;
-      makeDirectories(dir,client_sockfd) ;
-      makeCopy(path,ftmp,client_sockfd) ;
+
+      char finalPATH[MAXDATASIZE] ;
+      makePath(dir,argv[1],finalPATH,client_sockfd);
+      strcat(finalPATH,"/") ;
+      strcat(finalPATH,filename) ;
+      makeCopy(finalPATH,ftmp,client_sockfd) ;
 
       if (send(client_sockfd, "0\0" ,MAXDATASIZE,0)==-1) {
         // Envoi du code 0 en cas de succès
