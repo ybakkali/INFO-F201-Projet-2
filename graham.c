@@ -59,12 +59,14 @@ int main(int argc, char *argv[])
     char *filename = strrchr(argv[3],'/')+1;
     int index[4] = {2,4,5,6} ;
     int counter ;
-    for (counter = 0 ; counter < 5 ; ++counter ) {
+    for (counter = 0 ; counter < 5 ; counter++) {
       // Envoyer le nom d'utilisateur , la date(year/month/day)
       // et le nom du fichier photo
-      switch (counter) {
-        case 4 : message = filename ; break ;
-        default : message = argv[index[counter]] ;
+      if (counter == 4) {
+        message = filename ;
+      }
+      else {
+        message = argv[index[counter]] ;
       }
       if (send(sockfd,message,MAXDATASIZE,0)==-1) {
         perror("Client: send error");

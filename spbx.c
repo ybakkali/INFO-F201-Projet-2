@@ -62,7 +62,7 @@ void makePATH(char **dir,char *PoolV2PATH,char *finalPATH,int sockfd) {
 }
 
 int makeCopy(char *path , FILE* ftmp , int sockfd) {
-	
+
   /* Fonction pour copier le fichier qui se trouve dans
      "/tmp/file" vers le bon endroit dans pool v2
      "/chemin/vers/poolv2/username/year/month/day/file"
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
       /* Processus du fils */
       close(server_sockfd);
       // Fermer le socket du serveur
-      char buffer[MAXDATASIZE];
+      char buffer[MAXDATASIZE+1];
       // Liste pour stocker les informations
       char username [MAXDATASIZE+1] ;
       // Liste pour stocker le "username"
@@ -158,9 +158,9 @@ int main(int argc, char *argv[])
       // Liste pour stocker le "day"
       char filename[MAXDATASIZE+1] ;
       // Liste pour stocker le "filename"
-      int counter , numbytes ;
+      int counter, numbytes ;
       char *dir[5] = {username,year,month,day,filename} ;
-      for (counter = 0 ; counter < 5 ; ++counter ) {
+      for (counter = 0 ; counter < 5 ; counter++ ) {
           if ( (numbytes=recv(client_sockfd, buffer, MAXDATASIZE, 0)) == -1) {
             if (send(client_sockfd, "1Error : Username not received\nDate not received\nFilename not received\n" ,MAXDATASIZE,0)==-1) {
               // Envoyer au client l'erreur parvenue
