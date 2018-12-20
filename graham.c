@@ -22,17 +22,15 @@
 int main(int argc, char *argv[])
 {
     if (argc != 7) {
-        fprintf(stderr,"Error : synopsis invalid\n");
+        fprintf(stderr,"Error : synopsis\n");
         return EXIT_FAILURE;
     }
 
     struct hostent *he;
-    struct sockaddr_in their_addr;
-    // Informations sur l'adresse du connecteur
+    struct sockaddr_in their_addr; // connector's address information
 
     he=gethostbyname(argv[1]) ;
-    if ( he == NULL) {
-        // obtenir l'information sur l'hôte
+    if ( he == NULL) {  // get the host info
         perror("Client: gethostbyname");
         return EXIT_FAILURE;
     }
@@ -43,36 +41,70 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    their_addr.sin_family = AF_INET;
-    // ordre des octets de l'hôte
-    their_addr.sin_port = htons(PORT);
-    // court, ordre d'octets réseau
+    their_addr.sin_family = AF_INET;    // host byte order
+    their_addr.sin_port = htons(PORT);  // short, network byte order
     their_addr.sin_addr = *((struct in_addr *)he->h_addr);
-    memset(&(their_addr.sin_zero), '\0', 8);
-    // zéro pour le reste de la structure
+    memset(&(their_addr.sin_zero), '\0', 8);  // zero the rest of the struct
 
     if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
         perror("Client: connect");
         return EXIT_FAILURE;
     }
-    char buffer[MAXDATASIZE] , *message ;
+
     char *filename = strrchr(argv[3],'/')+1;
-    int index[4] = {2,4,5,6} ;
-    int counter ;
-    for (counter = 0 ; counter < 5 ; counter++) {
-      // Envoyer le nom d'utilisateur , la date(year/month/day)
-      // et le nom du fichier photo
-      if (counter == 4) {
-        message = filename ;
-      }
-      else {
-        message = argv[index[counter]] ;
-      }
-      if (send(sockfd,message,MAXDATASIZE,0)==-1) {
+    int usernameSize = strlen(argv[2]) ;
+    int filenameSize = strlen(filename) ;
+/////////
+    if (send(sockfd, &usernameSize ,sizeof(int),0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
-      }
     }
+
+    printf("Send size\n") ;
+
+    if (send(sockfd, &filenameSize  ,sizeof(int),0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send size\n") ;
+
+//////////
+    if (send(sockfd,argv[2],usernameSize,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send \n") ;
+
+    if (send(sockfd,argv[4],4,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send \n") ;
+
+    if (send(sockfd,argv[5],2,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send \n") ;
+
+    if (send(sockfd,argv[6],2,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send \n") ;
+
+    if (send(sockfd,filename,filenameSize,0)==-1) {
+        perror("Client: send error");
+        return EXIT_FAILURE;
+    }
+
+    printf("Send \n") ;
+////////
 
     FILE *fptr = fopen(argv[3], "r");
     // Fichier a envoyer
@@ -81,26 +113,34 @@ int main(int argc, char *argv[])
        return EXIT_FAILURE;
     }
     fseek(fptr, 0 , SEEK_END);
-    unsigned long fileSize = ftell(fptr);
+    int fileSize = ftell(fptr);
     rewind(fptr);
 
-    if (send(sockfd, &fileSize , sizeof(long) ,0)==-1) {
+    if (send(sockfd, &fileSize , sizeof(int) ,0)==-1) {
       perror("Client: send error");
       return EXIT_FAILURE;
     }
+/////////
+    char buffer[MAXDATASIZE] ;
     int numbytes = 1;
     while ((numbytes = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
-      if (send(sockfd,buffer,numbytes,0)==-1) {
-        perror("Client: send error");
-        return EXIT_FAILURE;
-      }
+        if (send(sockfd,buffer,numbytes,0)==-1) {
+            perror("Client: send error");
+            return EXIT_FAILURE;
+        }
     }
+
+/////////
+
     char EXIT_Message[MAXDATASIZE+1] ;
     if ( recv(sockfd, EXIT_Message ,MAXDATASIZE, 0) == -1) {
         // Reception du code 0 en cas de succès sinon 1 et l'erreur parvenue
         perror("Client: recv");
         return EXIT_FAILURE;
     }
+
+////////
+
     char exitStat = EXIT_Message[0] ;
     printf("Server send code %c\n",exitStat );
     if ( exitStat != '0' ) {
@@ -113,4 +153,4 @@ int main(int argc, char *argv[])
     fclose(fptr) ;
     // Fermer le fichier photo
     return EXIT_SUCCESS;
-}
+    }
