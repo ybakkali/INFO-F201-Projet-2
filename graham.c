@@ -19,8 +19,8 @@
 #define MAXDATASIZE 1024
 // Nombre maximum des informations
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+
     if (argc != 7) {
         fprintf(stderr,"Error : synopsis\n");
         return EXIT_FAILURE;
@@ -54,62 +54,62 @@ int main(int argc, char *argv[])
     char *filename = strrchr(argv[3],'/')+1;
     int usernameSize = strlen(argv[2]) ;
     int filenameSize = strlen(filename) ;
-/////////
+    /////////
     if (send(sockfd, &usernameSize ,sizeof(int),0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send size\n") ;
+    printf("Send username size\n") ;
 
     if (send(sockfd, &filenameSize  ,sizeof(int),0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send size\n") ;
+    printf("Send filename size\n") ;
 
-//////////
+    //////////
     if (send(sockfd,argv[2],usernameSize,0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send \n") ;
+    printf("Send username \n") ;
 
     if (send(sockfd,argv[4],4,0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send \n") ;
+    printf("Send year \n") ;
 
     if (send(sockfd,argv[5],2,0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send \n") ;
+    printf("Send month \n") ;
 
     if (send(sockfd,argv[6],2,0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send \n") ;
+    printf("Send day \n") ;
 
     if (send(sockfd,filename,filenameSize,0)==-1) {
-        perror("Client: send error");
+        perror("Client: Send error");
         return EXIT_FAILURE;
     }
 
-    printf("Send \n") ;
+    printf("Send filename \n") ;
 ////////
 
     FILE *fptr = fopen(argv[3], "r");
     // Fichier a envoyer
     if ( fptr == NULL ) {
-       perror("Error : No such file");
+       perror("Error : Open file return NULL");
        return EXIT_FAILURE;
     }
     fseek(fptr, 0 , SEEK_END);
@@ -117,32 +117,30 @@ int main(int argc, char *argv[])
     rewind(fptr);
 
     if (send(sockfd, &fileSize , sizeof(int) ,0)==-1) {
-      perror("Client: send error");
+      perror("Client: Send error");
       return EXIT_FAILURE;
     }
+
+    printf("Send file size \n") ;
 /////////
     char buffer[MAXDATASIZE] ;
     int numbytes = 1;
     while ((numbytes = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
         if (send(sockfd,buffer,numbytes,0)==-1) {
-            perror("Client: send error");
+            perror("Client: Send error");
             return EXIT_FAILURE;
         }
     }
-
 /////////
-
     char EXIT_Message[MAXDATASIZE+1] ;
     if ( recv(sockfd, EXIT_Message ,MAXDATASIZE, 0) == -1) {
         // Reception du code 0 en cas de succès sinon 1 et l'erreur parvenue
-        perror("Client: recv");
+        perror("Client: Recv");
         return EXIT_FAILURE;
     }
-
 ////////
-
     char exitStat = EXIT_Message[0] ;
-    printf("Server send code %c\n",exitStat );
+    printf("Server Send code %c\n",exitStat );
     if ( exitStat != '0' ) {
       // Une erreur est reçue du côte serveur
       fprintf(stderr,"%s\n",EXIT_Message+1);
@@ -153,4 +151,4 @@ int main(int argc, char *argv[])
     fclose(fptr) ;
     // Fermer le fichier photo
     return EXIT_SUCCESS;
-    }
+}
