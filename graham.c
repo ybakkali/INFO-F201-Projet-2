@@ -18,6 +18,7 @@
 // Le port du serveur où le client va se connecter
 #define MAXDATASIZE 1024
 // Nombre maximum des informations
+#define h_addr h_addr_list[0] 
 
 int main(int argc, char *argv[]) {
 
