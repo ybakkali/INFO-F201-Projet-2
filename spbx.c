@@ -25,7 +25,6 @@ int makeDirectory(char *dir ,int sockfd) {
   /* Fonction pour créer un repertoire */
 
   int  dirStat ;
-  printf("%s \n",dir) ;
   struct stat st = {0};
 
   if (stat(dir, &st) == -1) {
@@ -63,6 +62,7 @@ void makePATH(char **dir,char *PoolV2PATH,char *finalPATH,int sockfd) {
 }
 
 int makeCopy(char *path , FILE* ftmp , int sockfd) {
+	
   /* Fonction pour copier le fichier qui se trouve dans
      "/tmp/file" vers le bon endroit dans pool v2
      "/chemin/vers/poolv2/username/year/month/day/file"
@@ -70,7 +70,7 @@ int makeCopy(char *path , FILE* ftmp , int sockfd) {
 
   rewind(ftmp);
   FILE *fptr ;
-  printf("Move file to : %s\n",path) ;
+  printf("Moving file to : %s\n",path) ;
   fptr = fopen(path , "w");
   if ( fptr == NULL )
   {
@@ -85,7 +85,6 @@ int makeCopy(char *path , FILE* ftmp , int sockfd) {
   int numbytes = 1;
   char buff[MAXDATASIZE];
   while ((numbytes = fread(buff,sizeof(char),MAXDATASIZE,ftmp))) {
-    //printf("%d\n",numbytes) ;
     fwrite (buff,sizeof(char),numbytes,fptr);
   }
   fclose(fptr) ;
@@ -95,7 +94,7 @@ int makeCopy(char *path , FILE* ftmp , int sockfd) {
 int main(int argc, char *argv[])
 {
   if (argc != 2) {
-      fprintf(stderr,"Error : synopsis\n");
+      fprintf(stderr,"Error : synopsis invalid\n");
       return EXIT_FAILURE;
   }
 
@@ -175,18 +174,12 @@ int main(int argc, char *argv[])
           strcpy(dir[counter],buffer) ;
       }
 
-      if (send(client_sockfd,"Username received\nDate received\nFilename received\n" ,MAXDATASIZE,0)==-1) {
-      	perror("Server: send");
-      	return EXIT_FAILURE;
-      }
-
-      char tmpPath[MAXDATASIZE+1] = "/tmp/" ;
+      char tmpPATH[MAXDATASIZE+1] = "/tmp/" ;
       // Path où le fichier temporaire va être stocker
-      strcat(tmpPath,filename) ;
-      printf("%s\n",tmpPath) ;
+      strcat(tmpPATH,filename) ;
       FILE *ftmp ;
       // Pointeur vers le fichier temporaire
-      ftmp = fopen(tmpPath , "w+");
+      ftmp = fopen(tmpPATH , "w+");
       // Créer le fichier temporaire
       if ( ftmp == NULL )
       {
@@ -202,7 +195,6 @@ int main(int argc, char *argv[])
           return EXIT_FAILURE;
       }
 
-      printf("File size : %lu \n",recvFileSize) ;
       unsigned long fileSize = 0 ;
       // La taille finale du fichier photo reçue
       int numbytes__ ;
@@ -230,8 +222,10 @@ int main(int argc, char *argv[])
       char finalPATH[MAXDATASIZE] ;
       makePATH(dir,argv[1],finalPATH,client_sockfd);
       makeCopy(finalPATH,ftmp,client_sockfd) ;
+      fclose(ftmp) ;
+      remove(tmpPATH);
 
-      if (send(client_sockfd, "0\0" ,MAXDATASIZE,0)==-1) {
+      if (send(client_sockfd, "0" ,MAXDATASIZE,0)==-1) {
         // Envoi du code 0 en cas de succès
         perror("Server: send");
         return EXIT_FAILURE;

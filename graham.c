@@ -22,7 +22,7 @@
 int main(int argc, char *argv[])
 {
     if (argc != 7) {
-        fprintf(stderr,"Error : synopsis\n");
+        fprintf(stderr,"Error : synopsis invalid\n");
         return EXIT_FAILURE;
     }
 
@@ -63,24 +63,14 @@ int main(int argc, char *argv[])
       // Envoyer le nom d'utilisateur , la date(year/month/day)
       // et le nom du fichier photo
       switch (counter) {
-        case 4 :
-            message = filename ;
-            break ;
-        default :
-            message = argv[index[counter]] ;
+        case 4 : message = filename ; break ;
+        default : message = argv[index[counter]] ;
       }
       if (send(sockfd,message,MAXDATASIZE,0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
     }
-    int numbytes = recv(sockfd, buffer, MAXDATASIZE, 0) ;
-    if ( numbytes == -1) {
-        perror("Client: recv");
-        return EXIT_FAILURE;
-    }
-    buffer[numbytes] = '\0';
-    printf("Server send :\n%s",buffer);
 
     FILE *fptr = fopen(argv[3], "r");
     // Fichier a envoyer
@@ -91,15 +81,14 @@ int main(int argc, char *argv[])
     fseek(fptr, 0 , SEEK_END);
     unsigned long fileSize = ftell(fptr);
     rewind(fptr);
-    printf("Size of the file to send : %lu \n",fileSize) ;
 
     if (send(sockfd, &fileSize , sizeof(long) ,0)==-1) {
       perror("Client: send error");
       return EXIT_FAILURE;
     }
-    int numbytes_ = 1;
-    while ((numbytes_ = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
-      if (send(sockfd,buffer,numbytes_,0)==-1) {
+    int numbytes = 1;
+    while ((numbytes = fread(buffer,sizeof(char),MAXDATASIZE,fptr))) {
+      if (send(sockfd,buffer,numbytes,0)==-1) {
         perror("Client: send error");
         return EXIT_FAILURE;
       }
